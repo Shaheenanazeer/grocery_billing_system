@@ -1,13 +1,13 @@
-import streamlit as st
+import streamlit as st #ui
 import json
 import os
-import bcrypt
-import smtplib
-import uuid
+import bcrypt #password hashing library
+import smtplib #Simple Mail Transfer Protocol
+import uuid #Unique IDs
 from datetime import datetime
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email_validator import validate_email, EmailNotValidError
+from email.mime.text import MIMEText #email body
+from email.mime.multipart import MIMEMultipart #multi-part email
+from email_validator import validate_email, EmailNotValidError #email valid format, wrong email
 
 from dotenv import load_dotenv
 

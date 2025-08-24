@@ -4,5 +4,11 @@
         "password": "$2a$12$Gv.SiLx.fu.gmtTwALffwO9xpCXfS.lQIkqYqS5Nj7GmeJIe.dSSK",
         "role": "admin",
         "created_at": "2024-01-01T00:00:00"
+    },
+    "ma94006680@gmail.com": {
+        "username": "shaheena",
+        "password": "$2b$12$.yRngFF3CmZpVL4eOaUb9.Su6GV9odNG7c5G5ZQxX2WAXGWaC1N8i",
+        "role": "user",
+        "created_at": "2025-08-24T08:19:00.661777"
     }
 }
