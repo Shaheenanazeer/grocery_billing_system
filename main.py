@@ -16,7 +16,7 @@ EMAIL_PASSWORD = os.getenv("SMTP_PASSWORD")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@grocery.com")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 TAX_RATE = 0.05
-API_BASE = "http://localhost:8000"
+API_BASE = os.getenv("API_BASE","https://api-tau-orcin.vercel.app/")
 
 def send_email(to_email, subject, body):
     """Send email to user"""
