@@ -16,7 +16,7 @@ EMAIL_PASSWORD = os.getenv("SMTP_PASSWORD")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@grocery.com")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 TAX_RATE = 0.05
-API_BASE = os.getenv("API_BASE","https://api-tau-orcin.vercel.app/")
+API_BASE = "https://api-tau-orcin.vercel.app"
 
 def send_email(to_email, subject, body):
     """Send email to user"""
@@ -114,28 +114,56 @@ def create_order_email(username, order_id, total, status="pending"):
     """
 
 def load_users():
+    """Load users from API - FIXED for new response structure"""
     try:
         response = requests.get(f"{API_BASE}/users")
         response.raise_for_status()
-        return response.json()
+        data = response.json()
+        
+        # Handle new API response structure: {"success": True, "users": {...}}
+        if isinstance(data, dict) and 'users' in data:
+            return data['users']
+        else:
+            # Fallback for direct response
+            return data
     except requests.exceptions.RequestException as e:
         st.error(f"Failed to load users: {str(e)}")
         return {}
 
 def load_orders():
+    """Load orders from API - FIXED for new response structure"""
     try:
         response = requests.get(f"{API_BASE}/orders")
         response.raise_for_status()
-        return response.json()
+        data = response.json()
+        
+        # Orders endpoint returns array directly
+        if isinstance(data, list):
+            return data
+        else:
+            return []
     except requests.exceptions.RequestException as e:
         st.error(f"Failed to load orders: {str(e)}")
         return []
 
 def load_products():
+    """Load products from API - FIXED for new response structure"""
     try:
         response = requests.get(f"{API_BASE}/products")
         response.raise_for_status()
-        return response.json()
+        data = response.json()
+        
+        # Products endpoint returns object directly
+        if isinstance(data, dict):
+            return data
+        else:
+            return {
+                "apple": {"price": 100, "unit": "kg"},
+                "banana": {"price": 50, "unit": "dozen"},
+                "milk": {"price": 120, "unit": "litre"},
+                "bread": {"price": 80, "unit": "loaf"},
+                "egg": {"price": 15, "unit": "piece"}
+            }
     except requests.exceptions.RequestException as e:
         st.error(f"Failed to load products: {str(e)}")
         return {
@@ -176,7 +204,9 @@ def signup_page():
                         st.success("Account created successfully! Please login.")
                     st.balloons()
                 except requests.exceptions.HTTPError as e:
-                    st.error(e.response.json().get('detail', "Failed to create account"))
+                    error_response = e.response.json()
+                    error_detail = error_response.get('detail', "Failed to create account")
+                    st.error(error_detail)
                 except requests.exceptions.RequestException as e:
                     st.error(f"Failed to create account: {str(e)}")
 
@@ -197,15 +227,22 @@ def login_page():
                     response = requests.post(f"{API_BASE}/login", json={"email": email, "password": password})
                     response.raise_for_status()
                     data = response.json()
-                    st.session_state.logged_in = True
-                    st.session_state.user_email = email
-                    st.session_state.username = data["username"]
-                    st.session_state.user_role = data["role"]
-                    st.session_state.cart = {}
-                    st.success(f"Welcome back, {data['username']}!")
-                    st.rerun()
+                    
+                    # Handle new API response structure
+                    if data.get('success'):
+                        st.session_state.logged_in = True
+                        st.session_state.user_email = email
+                        st.session_state.username = data["username"]
+                        st.session_state.user_role = data["role"]
+                        st.session_state.cart = {}
+                        st.success(f"Welcome back, {data['username']}!")
+                        st.rerun()
+                    else:
+                        st.error("Login failed!")
                 except requests.exceptions.HTTPError as e:
-                    st.error(e.response.json().get('detail', "Invalid credentials!"))
+                    error_response = e.response.json()
+                    error_detail = error_response.get('detail', "Invalid credentials!")
+                    st.error(error_detail)
                 except requests.exceptions.RequestException as e:
                     st.error(f"Invalid credentials: {str(e)}")
 
@@ -431,7 +468,9 @@ def admin_dashboard():
         col1, col2, col3, col4 = st.columns(4)
        
         with col1:
-            st.metric("👥 Total Users", len([u for u in users.values() if u['role'] == 'user']))
+            # FIXED: Handle new API response structure
+            user_count = len([u for u in users.values() if u.get('role') == 'user']) if isinstance(users, dict) else 0
+            st.metric("👥 Total Users", user_count)
        
         with col2:
             st.metric("📦 Total Orders", len(orders))
@@ -455,13 +494,18 @@ def admin_dashboard():
         st.subheader("User Management")
        
         users = load_users()
-        user_list = [u for email, u in users.items() if u['role'] == 'user']
+        
+        # FIXED: Handle new API response structure
+        if isinstance(users, dict):
+            user_list = [u for email, u in users.items() if u.get('role') == 'user']
+        else:
+            user_list = []
        
         if user_list:
             st.write(f"**Total Users: {len(user_list)}**")
            
             for email, user in users.items():
-                if user['role'] == 'user':
+                if user.get('role') == 'user':
                     with st.expander(f"👤 {user['username']} ({email})"):
                         st.write(f"**Email:** {email}")
                         st.write(f"**Joined:** {user.get('created_at', 'Unknown')[:10]}")
@@ -498,7 +542,9 @@ def admin_dashboard():
                             st.success(f"✅ Product '{name.title()}' added successfully!")
                             st.rerun()
                         except requests.exceptions.HTTPError as e:
-                            st.error(e.response.json().get('detail', "Failed to add product!"))
+                            error_response = e.response.json()
+                            error_detail = error_response.get('detail', "Failed to add product!")
+                            st.error(error_detail)
                         except requests.exceptions.RequestException as e:
                             st.error(f"Failed to add product: {str(e)}")
                     else:
